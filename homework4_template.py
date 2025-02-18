@@ -14,7 +14,7 @@ def forward_prop (x, y, W1, b1, W2, b2):
     z = W1@x + b1[:, np.newaxis]
     h = relu(z)
     yhat = W2 @ h + b2
-    loss = 0.5 * np.mean((yhat - y) ** 2)
+    loss = 0.5 * np.mean((y - yhat) ** 2)
     return loss, x, z, h, yhat
 
 def relu_prime(z):
@@ -22,23 +22,18 @@ def relu_prime(z):
 
 def back_prop (X, y, W1, b1, W2, b2):
     n = X.shape[1]
-    print(W2.shape)
-    print(W1.shape)
     loss, x, z, h, yhat = forward_prop(X, y, W1, b1, W2, b2)
-    print(f"yhat shape: {yhat.shape}, y shape: {y.shape}")
-    gradyhat = (yhat - y) / n
+    gradyhat = (yhat - y)
     gradW2 = gradyhat @ h.T
     gradb2 = np.sum(gradyhat, axis = 1, keepdims = True)
-    print(gradyhat.shape)
-    g_t = (gradyhat@W2.T) * relu_prime(z.T)
+    g_t = ((yhat - y)@W2) * relu_prime(z.T)
     gradW1 = g_t.T @ x.T
     gradb1 = g_t
     return gradW1, gradb1, gradW2, gradb2
 
 def train (trainX, trainY, W1, b1, W2, b2, testX, testY, epsilon = 1e-2, batchSize = 64, numEpochs = 1000):
     n = trainX.shape[1]
-    print(trainY)
-
+    print(trainY.shape)
     for epoch in range(numEpochs):
         indices = np.random.permutation(n)
         trainX, trainY = trainX[:, indices], trainY[:, indices]
@@ -51,7 +46,7 @@ def train (trainX, trainY, W1, b1, W2, b2, testX, testY, epsilon = 1e-2, batchSi
             W1 -= epsilon * gradW1
             b1 -= epsilon * gradb1.squeeze()
             W2 -= epsilon * gradW2
-            b2 -= epsilon * gradb2.squeeze
+            b2 -= epsilon * gradb2.squeeze()
 
             if epoch % 100 == 0:
                 loss, _, _, _, _ = forward_prop(testX, testY, W1, b1, W2, b2)
@@ -67,7 +62,7 @@ def show_weight_vectors (W1):
 
 def loadData (which, mu = None):
     images = np.load("age_regression_X{}.npy".format(which)).reshape(-1, 48**2).T
-    labels = np.load("age_regression_y{}.npy".format(which))
+    labels = np.load("age_regression_y{}.npy".format(which)).reshape(1, -1)
 
     if which == "tr":
         mu = np.mean(images)
